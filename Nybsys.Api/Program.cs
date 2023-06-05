@@ -9,6 +9,7 @@ options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnectio
 builder.Services.AddTransient<IEmployeeRepository, EmployeeRepository>();
 builder.Services.AddTransient<IEmployeeTRepository, EmployeeRepositoryT>();
 builder.Services.AddTransient<IDesignationRepository, DesignationRepository>();
+builder.Services.AddTransient<IUserRepository, UserRepository>();
 
 // Add services to the container.
 

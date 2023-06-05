@@ -25,6 +25,7 @@ namespace DatabaseContext
         public DbSet<Employee> Employees { get; set; }
         public DbSet<EmployeeT> EmployeeTs { get;set; }
         public DbSet<EDesignation> EDesignations { get;set; }
+        public DbSet<User> Users { get;set; }
 
     }
 }
