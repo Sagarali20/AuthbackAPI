@@ -28,7 +28,7 @@ namespace Nybsys.Api.Utils
 
 		public static bool VerifyPassword(string password,string base64hash)
 		{ 	
-		 var hashBytes= Convert.FromBase64String(password);
+		 var hashBytes= Convert.FromBase64String(base64hash);
 		 var salt= new byte[SaltSize];
 			Array.Copy(hashBytes,0, salt, 0, SaltSize);
 			var key = new Rfc2898DeriveBytes(password, salt, Iteration);
@@ -36,7 +36,7 @@ namespace Nybsys.Api.Utils
 
 			for (var i = 0; i < HashSize; i++)
 			{
-				if (hashBytes[i+SaltSize] != hashBytes[i])
+				if (hashBytes[i+SaltSize] != hash[i])
 				{
 					return false;
 				}
