@@ -5,9 +5,13 @@ using Nybsys.Api.Utils;
 using Nybsys.DataAccess.Contracts;
 using Nybsys.DataAccess.Repository;
 using Nybsys.EntityModels;
+using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using System.Text.RegularExpressions;
 using User = Nybsys.EntityModels.User;
+using System;
+using System.Security.Claims;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Nybsys.Api.Controllers
 {
@@ -138,10 +142,29 @@ namespace Nybsys.Api.Controllers
 
 		}
 
-		private string createJwt(string user)
+		private string createJwt(User user)
 		{
+			var jwtTokenHandler = new JwtSecurityTokenHandler();
 
-			return "";
+			var key = Encoding.ASCII.GetBytes("veryverysecret.....");
+			var identity = new ClaimsIdentity(new Claim[]
+			{
+				new Claim(ClaimTypes.Role,user.Role),
+				new Claim(ClaimTypes.Name,$"{user.FirstName} {user.LastName}")
+			});
+
+			var credentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256);
+			var tokenDescriptor = new SecurityTokenDescriptor
+			{
+				Subject = identity,
+				Expires = DateTime.Now.AddDays(1),
+				SigningCredentials = credentials
+			};
+
+			var token = jwtTokenHandler.CreateToken(tokenDescriptor);
+
+
+			return jwtTokenHandler.WriteToken(token);
 		}
 
 
