@@ -12,6 +12,7 @@ using User = Nybsys.EntityModels.User;
 using System;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Nybsys.Api.Controllers
 {
@@ -46,7 +47,10 @@ namespace Nybsys.Api.Controllers
 			{
 				return BadRequest(new {result= result, Message = "Password is incorrect" });
 			}
-			return Ok(new { result =true, Message = "login success"});
+
+			model.Token = createJwt(user);
+
+			return Ok(new {token=model.Token, result =true, Message = "login success"});
 
 		}
 
@@ -96,6 +100,18 @@ namespace Nybsys.Api.Controllers
 				return Ok(new { result = false, ex.Message });
 			}
 		}
+
+		[Authorize]
+		[HttpGet]
+	    public async Task<IActionResult> GetAllUser()
+		{
+			var alluser = _userRepository.GetAll();
+
+
+			return Ok( new {users= alluser });
+		}
+
+
 		private  Boolean CheckUsernameExits(string username)
 		{
 
@@ -162,15 +178,7 @@ namespace Nybsys.Api.Controllers
 			};
 
 			var token = jwtTokenHandler.CreateToken(tokenDescriptor);
-
-
 			return jwtTokenHandler.WriteToken(token);
 		}
-
-
-
-
-
-
 	}
 }
