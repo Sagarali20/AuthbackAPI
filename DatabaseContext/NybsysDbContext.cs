@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Nybsys.EntityModels;
+using Nybsys.EntityModels.Dto;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,6 +27,7 @@ namespace DatabaseContext
         public DbSet<EmployeeT> EmployeeTs { get;set; }
         public DbSet<EDesignation> EDesignations { get;set; }
         public DbSet<User> Users { get;set; }
+
 
     }
 }

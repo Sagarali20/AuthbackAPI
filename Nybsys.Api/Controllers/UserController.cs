@@ -13,6 +13,9 @@ using System;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Cryptography;
+using Nybsys.EntityModels.Dto;
+using Azure.Core;
 
 namespace Nybsys.Api.Controllers
 {
@@ -48,9 +51,21 @@ namespace Nybsys.Api.Controllers
 				return BadRequest(new {result= result, Message = "Password is incorrect" });
 			}
 
-			model.Token = createJwt(user);
+			user.Token = createJwt(user);
 
-			return Ok(new {token=model.Token, result =true, Message = "login success"});
+			var newAccessToken = user.Token;
+			var newRefreshToken = CreateRefreshToken();
+			user.RefreshToken = newRefreshToken;
+
+			result = _userRepository.Update(user);
+
+			//return Ok(new {token=model.Token, result =true, Message = "login success"});
+			return Ok(new TokenApiDto()
+			{
+				Accesstoken = newAccessToken,
+				RefreshToken = newRefreshToken,
+				result = result
+			}); ;
 
 		}
 
@@ -137,7 +152,7 @@ namespace Nybsys.Api.Controllers
 			StringBuilder sb = new StringBuilder();
 
 
-			if (!string.IsNullOrEmpty(password) && password.Length<8)
+			if (!string.IsNullOrEmpty(password) && password.Length<1)
 			{
 
 				sb.Append("Minimum password length should be 8" + Environment.NewLine);
@@ -173,12 +188,49 @@ namespace Nybsys.Api.Controllers
 			var tokenDescriptor = new SecurityTokenDescriptor
 			{
 				Subject = identity,
-				Expires = DateTime.Now.AddDays(1),
+				//Expires = DateTime.Now.AddDays(1),
+				Expires = DateTime.Now.AddSeconds(10),
 				SigningCredentials = credentials
 			};
 
 			var token = jwtTokenHandler.CreateToken(tokenDescriptor);
 			return jwtTokenHandler.WriteToken(token);
+		}
+
+
+
+		private string CreateRefreshToken()
+		{
+			var tokenBytes = RandomNumberGenerator.GetBytes(64);
+			var RefreshToken =  Convert.ToBase64String(tokenBytes);
+			var tokeninuser  = _userRepository.GetAll().Any(x=>x.RefreshToken== RefreshToken);
+			if(tokeninuser)
+			{
+				return CreateRefreshToken();
+			}
+			return RefreshToken;
+		}
+
+		private ClaimsPrincipal GetPrincipleFromExpiredToken(string token)
+		{
+			var key = Encoding.ASCII.GetBytes("veryverysecret.....");
+
+			var tokenValidationParameter = new TokenValidationParameters
+			{
+				ValidateAudience = false,
+				ValidateIssuer = false,
+				ValidateIssuerSigningKey = false,
+				IssuerSigningKey = new SymmetricSecurityKey(key),
+				ValidateLifetime = false
+			};
+			var tokenhandler = new JwtSecurityTokenHandler();
+			SecurityToken securityToken;
+			var principal=tokenhandler.ValidateToken(token,tokenValidationParameter, out securityToken);
+			var jwtSecurityToken= securityToken as JwtSecurityToken;
+			if(jwtSecurityToken==null || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256,StringComparison.InvariantCultureIgnoreCase))
+				throw new SecurityTokenException("this is invalid token");
+			return principal;
+			
 		}
 	}
 }
