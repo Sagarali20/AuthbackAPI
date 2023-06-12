@@ -16,6 +16,7 @@ using Microsoft.AspNetCore.Authorization;
 using System.Security.Cryptography;
 using Nybsys.EntityModels.Dto;
 using Azure.Core;
+using System.Reflection.Metadata.Ecma335;
 
 namespace Nybsys.Api.Controllers
 {
@@ -62,7 +63,7 @@ namespace Nybsys.Api.Controllers
 			//return Ok(new {token=model.Token, result =true, Message = "login success"});
 			return Ok(new TokenApiDto()
 			{
-				Accesstoken = newAccessToken,
+				AccessToken = newAccessToken,
 				RefreshToken = newRefreshToken,
 				result = result
 			}); ;
@@ -181,7 +182,8 @@ namespace Nybsys.Api.Controllers
 			var identity = new ClaimsIdentity(new Claim[]
 			{
 				new Claim(ClaimTypes.Role,user.Role),
-				new Claim(ClaimTypes.Name,$"{user.FirstName} {user.LastName}")
+				//new Claim(ClaimTypes.Name,$"{user.FirstName} {user.LastName}")
+				new Claim(ClaimTypes.Name,$"{user.FirstName}")
 			});
 
 			var credentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256);
@@ -231,6 +233,32 @@ namespace Nybsys.Api.Controllers
 				throw new SecurityTokenException("this is invalid token");
 			return principal;
 			
+		}
+		[HttpPost("referesh")]
+		public async Task<IActionResult> Refresh(TokenApiDto TokenApiModel)
+		{
+			if(TokenApiModel is null)
+			{
+              return BadRequest("invalid client request");
+			}				
+			string accesstoken = TokenApiModel.AccessToken;
+			string refreshtoken = TokenApiModel.RefreshToken;
+			var pricipal = GetPrincipleFromExpiredToken(accesstoken);
+			var username = pricipal.Identity.Name;
+			var user = _userRepository.GetAll().FirstOrDefault(x => x.Username == username);
+			if (user is null || user.RefreshToken != refreshtoken || user.RefreshTokenExpiretime <= DateTime.Now)
+				return BadRequest("Invalid request");
+			var newAccessToken = createJwt(user);
+			var newRefreshToken = CreateRefreshToken();
+			user.RefreshToken = newRefreshToken;
+			_userRepository.Update(user);
+
+			return Ok(new TokenApiDto()
+			{
+				AccessToken = newAccessToken,
+				RefreshToken = newRefreshToken,
+			});
+
 		}
 	}
 }
