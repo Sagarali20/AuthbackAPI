@@ -57,7 +57,7 @@ namespace Nybsys.Api.Controllers
 			var newAccessToken = user.Token;
 			var newRefreshToken = CreateRefreshToken();
 			user.RefreshToken = newRefreshToken;
-
+			user.RefreshTokenExpiretime = DateTime.Now.AddDays(5);
 			result = _userRepository.Update(user);
 
 			//return Ok(new {token=model.Token, result =true, Message = "login success"});
@@ -183,7 +183,7 @@ namespace Nybsys.Api.Controllers
 			{
 				new Claim(ClaimTypes.Role,user.Role),
 				//new Claim(ClaimTypes.Name,$"{user.FirstName} {user.LastName}")
-				new Claim(ClaimTypes.Name,$"{user.FirstName}")
+				new Claim(ClaimTypes.Name,$"{user.Username}")
 			});
 
 			var credentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256);
@@ -234,7 +234,7 @@ namespace Nybsys.Api.Controllers
 			return principal;
 			
 		}
-		[HttpPost("referesh")]
+		[HttpPost("refresh")]
 		public async Task<IActionResult> Refresh(TokenApiDto TokenApiModel)
 		{
 			if(TokenApiModel is null)
